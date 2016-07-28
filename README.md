@@ -13,7 +13,6 @@ An application for messing with physics on the 3ds
 - Different kinds of objects (like circles or custom shapes)  
 - Proper implementation of forces/momentum and vectors  
 - Tension and ropes  
-- Create .cia and banner  
 - Develop into physics library
 - 3D physics
 
