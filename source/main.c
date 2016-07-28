@@ -47,7 +47,8 @@ int main()
 	consoleInit(GFX_TOP, NULL);
 
 	printf("\x1b[0;0HPhysics Sandbox v0.1 by PieFace");
-	printf("\x1b[24;0HControls:");
+	printf("\x1b[23;0HControls:");
+	printf("\x1b[24;0HTap and drag square to move it");
 	printf("\x1b[25;0HX - Reset Square");
 	printf("\x1b[26;0HDPad L&R - Change between mod_vals");
 	printf("\x1b[27;0HDPad U&D - Increment and decrement mod_val");
@@ -142,9 +143,6 @@ int main()
 
 		if(pressed & KEY_L) inc *= 10;
 		if(pressed & KEY_R) inc /= 10;		
-		
-		rect_x += vel_x/60.0f;
-		rect_y += vel_y/60.0f;
 
 		if(rect_x-25 <=0 || rect_x+25 >= 319)
 		{
@@ -175,12 +173,6 @@ int main()
 			offset_y = 0;
 		}
 
-		if (mov_rect)
-		{
-			rect_x = touch_x + offset_x;
-			rect_y = touch_y + offset_y;
-		}
-
 		if(pressed & KEY_X)
 		{
 			mod_val = 0;
@@ -204,6 +196,14 @@ int main()
 		{
 			vel_y -= gravity_y;
 			vel_x += gravity_x;
+	
+			rect_x += vel_x/60.0f;
+			rect_y += vel_y/60.0f;
+		}
+		else
+		{
+			rect_x = touch_x + offset_x;
+			rect_y = touch_y + offset_y;
 		}
 
 		#ifdef debug
