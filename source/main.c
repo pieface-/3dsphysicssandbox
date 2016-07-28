@@ -144,17 +144,21 @@ int main()
 		if(pressed & KEY_L) inc *= 10;
 		if(pressed & KEY_R) inc /= 10;		
 
-		if(rect_x-25 <=0 || rect_x+25 >= 319)
+		if(rect_x-25 <=1 || rect_x+25 >= 319)
 		{
 			vel_x = -vel_x*elasticity;
-			rect_x = (rect_x <=25 ? 0 + 25 : 320 - 25);
+			//rect_x = (rect_x <=25 ? 0 + 25 : 320 - 25);
+			if(rect_x < 25) rect_x = 25;
+			if(rect_x > 320 - 25) rect_x = 320-25;
 			vel_y += (vel_y > 0 ? -fmin(friction,vel_y) : -fmax(-friction,vel_y));
 		}
 
-		if(rect_y-25 <=0 || rect_y+25 >= 239) 
+		if(rect_y-25 <=1 || rect_y+25 >= 239) 
 		{
 			vel_y = -vel_y*elasticity;
-			rect_y = (rect_y <=25 ? 0 + 25 : 240 - 25);
+			//rect_y = (rect_y <=25 ? 0 + 25 : 240 - 25);
+			if(rect_y < 25) rect_y = 25;
+			if(rect_y > 240 - 25) rect_y = 240-25;
 			vel_x += (vel_x > 0 ? -fmin(friction,vel_x) : -fmax(-friction,vel_x));
 
 		}
@@ -211,7 +215,7 @@ int main()
 		printf("\x1b[1;0H%s:%03d,%03d","touch_coord",touch_x,touch_y);
 		printf("\x1b[2;0H%s:%03.0f,%03.0f","rect_coord",rect_x,rect_y);
 		printf("\x1b[3;0H%s:%03d,%03d","offset",offset_x,offset_y);
-		printf("\x1b[4;0H%s:%010.3f,%010.3f","velocity",vel_x,vel_y);
+		printf("\x1b[4;0H%s:%010.3f,%010.3f","velocity",vel_x,-vel_y);
 		printf("\x1b[5;0H%s:%f,%f","gravity",gravity_x,gravity_y);
 		printf("\x1b[6;0H%s:%f","elasticity",elasticity);
 		printf("\x1b[7;0H%s:%f","friction",friction);

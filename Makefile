@@ -140,11 +140,11 @@ $(TARGET)-strip.elf: $(BUILD)
 #---------------------------------------------------------------------------------
 cci: $(TARGET)-strip.elf
 	@makerom -f cci -rsf resources/$(TARGET).rsf -target d -exefslogo -elf $(TARGET)-strip.elf -o $(TARGET).3ds
-	@echo "built ... sf2d_sample.3ds"
+	@echo built ... $(TARGET).3ds
 #---------------------------------------------------------------------------------
 cia: $(TARGET)-strip.elf
 	@makerom -f cia -o $(TARGET).cia -elf $(TARGET)-strip.elf -rsf resources/$(TARGET).rsf -icon resources/icon.icn -banner resources/banner.bnr -exefslogo -target t
-	@echo "built ... sf2d_sample.cia"
+	@echo built ... $(TARGET).cia
 #---------------------------------------------------------------------------------
 send: $(BUILD)
 	@3dslink $(TARGET).3dsx
