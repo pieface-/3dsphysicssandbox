@@ -8,6 +8,7 @@ An application for messing with physics on the 3ds
 
 ###Possible plans for the Future:  
 - More than one object  
+- Fix friction behavior
 - Different kinds of objects (like circles or custom shapes)  
 - Proper implementation of forces and vectors  
 - Tension and ropes  
