@@ -10,6 +10,7 @@
 #define CONFIG_3D_SLIDERSTATE (*(float *)0x1FF81080)
 #define debug
 
+//forward declarations
 char* get_mod_val_id(u8);
 
 int main()
@@ -17,27 +18,51 @@ int main()
 	// Set the random seed based on the time
 	srand(time(NULL));
 
+	//init screen background to white
 	sf2d_init();
 	sf2d_set_clear_color(RGBA8(0xFF, 0xFF, 0xFF, 0xFF));
 	sf2d_set_3D(0);
 	sf2d_set_vblank_wait(1);
 
+	//Variables
 
+	//Represents the current modifiable value: gravity_y, gravity_x, friction, elasticity
 	u8 mod_val = 0;
+
+	//coordinates of screen touch
 	u16 touch_x = 320/2;
 	u16 touch_y = 240/2;
+
+	//coordinates of rectangle (float to allow small velocities - casted to int when rendering)
 	float rect_x = 320/2;
 	float rect_y = 240/2;
+
+	//increment - determines how much is added or subtracted to mod_val - is always power of 10 
 	float inc = 1.0f;
+	
+	//boolean to determine if touch screen is currently dictating the square's location
 	u8 mov_rect = 0.0f;
+
+	//records where the user tapped on the square e.g. if the top right corner is tapped, it will stay at top right corner
 	s8 offset_x = 0.0f;
 	s8 offset_y = 0.0f;
+
+	//x and y velocity of the square in pixels per second
 	float vel_x = 0.0f;
 	float vel_y = 0.0f;
+
+	//In a collision, velocity perpendicular to collision is multiplied by elasticity e.g. at 0.5, half of y speed is lost when colliding with floor 
 	float elasticity = .5f;
+
+	//gravity values - will accelerate square in given direction on every frame - pixels per second^2
 	float gravity_y = -10.0f;
-	float gravity_x = 0.0f;	
+	float gravity_x = 0.0f;
+
+	//Friciton - reduces speed parallel to wall if the wall is being touched
+	//currently not implemented well, needs to reflect gravity values	
 	float friction = .5f;
+
+	//HID variables
 	touchPosition touch;
 	circlePosition circle;
 	u32 held;
@@ -56,17 +81,23 @@ int main()
 	printf("\x1b[29;0HStart - Exit");
 	while (aptMainLoop()) {
 
+		//gather inputs
 		hidScanInput();
 		hidCircleRead(&circle);
 		held = hidKeysHeld();
 		pressed = hidKeysDown();
 		released = hidKeysUp();
+		
 
+		//check button presses
+
+		//Press Start to Exit
 		if (held & KEY_START) 
 		{
 			break;
 		}
 		
+		//Read touch values if the screen is pressed
 		if (held & KEY_TOUCH) 
 		{
 			hidTouchRead(&touch);
@@ -79,6 +110,7 @@ int main()
 			}
 		}
 
+		//DPAD up - Increment current mod_val
 		if(pressed & KEY_DUP)
 		{
 			if(mod_val == 0)
@@ -103,7 +135,8 @@ int main()
 				if(friction > 1) friction = 1;
 			}
 		}
-
+		
+		//DPAD down - decrement current mod_val
 		if(pressed & KEY_DDOWN)
 		{
 			if(mod_val == 0)
@@ -129,6 +162,7 @@ int main()
 			}
 		}
 
+		//DPAD Left and Right - Change mod_val
 		if(pressed & KEY_DLEFT)
 		{
 			mod_val--;
@@ -140,10 +174,18 @@ int main()
 			mod_val++;
 			if (mod_val > 3) mod_val = 0;
 		}
+		
 
+		//L and R - Multiply and divide increment by 10
 		if(pressed & KEY_L) inc *= 10;
 		if(pressed & KEY_R) inc /= 10;		
 
+
+		//Collisions and Friction
+		//Detects collision with edge of the screen
+		//Inverts velocity perpendicular to collision and gradually reduces velocity parallel to collision
+
+		//Collision and friction with top or bottom edge
 		if(rect_x-25 <=1 || rect_x+25 >= 319)
 		{
 			vel_x = -vel_x*elasticity;
@@ -152,7 +194,8 @@ int main()
 			if(rect_x > 320 - 25) rect_x = 320-25;
 			vel_y += (vel_y > 0 ? -fmin(friction,vel_y) : -fmax(-friction,vel_y));
 		}
-
+		
+		//Collision and friction with left and right edge
 		if(rect_y-25 <=1 || rect_y+25 >= 239) 
 		{
 			vel_y = -vel_y*elasticity;
@@ -163,13 +206,15 @@ int main()
 
 		}
 
+		//If the coordinates of the screen tap are inside the square, allow movement of the square
 		if ((pressed & KEY_TOUCH)&&(touch_x > rect_x-25)&&(touch_x < rect_x+25)&&(touch_y > rect_y-25)&&(touch_y < rect_y+25))
 		{
 			mov_rect = 1;
 			offset_x = rect_x - touch_x;
 			offset_y = rect_y - touch_y;
 		}
-
+		
+		//If the screen is let go, stop allowing screen to control square
 		if ((released & KEY_TOUCH))
 		{
 			mov_rect = 0;
@@ -177,6 +222,7 @@ int main()
 			offset_y = 0;
 		}
 
+		//Press x to reset all values
 		if(pressed & KEY_X)
 		{
 			mod_val = 0;
@@ -196,6 +242,9 @@ int main()
 			friction = .5f;
 		}
 
+		//Determines how to move the square
+		//If the touch screen is not dictating the square's location, apply gravity and velocity
+		//Else move square to where screen is touched		
 		if(!mov_rect)
 		{
 			vel_y -= gravity_y;
@@ -210,6 +259,7 @@ int main()
 			rect_y = touch_y + offset_y;
 		}
 
+		//Live printing of important values
 		#ifdef debug
 		printf("\x1b[0;41H%s:%5.2f","fps",sf2d_get_fps());
 		printf("\x1b[1;0H%s:%03d,%03d","touch_coord",touch_x,touch_y);
@@ -223,6 +273,7 @@ int main()
 		printf("\x1b[9;0H%s:%s","mod_val",get_mod_val_id(mod_val));		
 		#endif
 
+		//draw frame
 		sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
 
 		sf2d_draw_rectangle((int)rect_x-25, (int)rect_y-25, 50, 50, RGBA8(0xFF, 0x00, 0xFF, 0xFF));
@@ -237,6 +288,7 @@ int main()
 	return 0;
 }
 
+//returns string of mod_val from id
 char* get_mod_val_id(u8 id)
 {
 	if(id==0) return "gravity_y ";
