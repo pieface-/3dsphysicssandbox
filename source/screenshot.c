@@ -155,7 +155,7 @@ void write_framebuffer_RGB888(FILE* f, u32 width)
 
 	int i, j;
 
-	u8* framebuf = (u8*) malloc(3*240*width);
+	//u8* framebuf = (u8*) malloc(3*240*width);
 
 	for(j=0;j<240;j++)
 	{
@@ -164,7 +164,7 @@ void write_framebuffer_RGB888(FILE* f, u32 width)
 		{
 		
 			u32 v=(j+i*240)*3;
-			u32 u = (j*width + i)*3;
+			//u32 u = (j*width + i)*3;
 			fwrite(&bufAdr[v], sizeof(bufAdr[v]), 3, f);
 			//printf("\x1b[15;0HInit");
 			//memcpy(framebuf + u,bufAdr + v, 3);

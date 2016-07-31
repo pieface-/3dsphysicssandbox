@@ -86,7 +86,7 @@ int main()
 
 	//gfxSetScreenFormat(GFX_TOP, 1);
 
-	printf("\x1b[0;0HPhysics Sandbox v0.1 by PieFace");
+	printf("\x1b[0;0HPhysics Sandbox v0.2 by PieFace");
 	printf("\x1b[21;0HControls:");
 	printf("\x1b[22;0HTap and drag square to move it");
 	printf("\x1b[23;0HX - Reset Square");
