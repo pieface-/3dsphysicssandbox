@@ -32,7 +32,7 @@ SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include
 
-APP_TITLE		:= Physics Sandbox
+APP_TITLE		:= 3DS Physics Sandbox
 APP_DESCRIPTION	:= Small Application for Playing with Physics
 APP_AUTHOR		:= PieFace
 
