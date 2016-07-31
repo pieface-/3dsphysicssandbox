@@ -12,7 +12,7 @@
 
 void save_screenshot()
 {
-	//save_screenshot_top();
+	save_screenshot_top();
 	save_screenshot_bottom();
 }
 
