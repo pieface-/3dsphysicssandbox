@@ -295,6 +295,7 @@ int main()
 			gravity_y_b = -10.0;
 			gravity_x_b = 0;	
 			friction = .5;
+			gravity_from_accel = 0;
 		}
 
 		if(gravity_from_accel)
