@@ -5,11 +5,12 @@ An application for messing with physics on the 3ds
 - Manipulate a single 50 by 50 pixel square with the stylus  
 - The square is affected by gravity, collisions, and friction  
 - Modifiable gravity, collision elasticity, and friction values  
+- Use gyroscope of 3DS to control gravity (tilt 3ds and square will follow)
 
 ###Possible plans for the Future:  
 - Fix Banner Sound (Warning: sound may be irritable)
 - More than one object  
-- Improve friction implementation
+- -Improve friction implementation- Done
 - Different kinds of objects (like circles or custom shapes)  
 - Proper implementation of forces/momentum and vectors  
 - Tension and ropes  
