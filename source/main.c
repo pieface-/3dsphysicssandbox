@@ -61,9 +61,9 @@ int main()
 
 	phys_obj obj0 = {1, {100,100}, {0,0}, 50};
 
-	phys_obj obj1 = {1, {200, 100}, {0,-250}, 5};
+	phys_obj obj1 = {1, {200, 100}, {0,-250}, 20};
 
-	phys_obj obj2 = {1, {150, 50}, {100,0}, 80};
+	phys_obj obj2 = {1, {150, 50}, {00,0}, 80};
 
 
 	wall_obj wobj0 = {1, 0, {0,0}, 320};
@@ -71,9 +71,9 @@ int main()
 	wall_obj wobj2 = {1, 0, {0,239}, 320};
 	wall_obj wobj3 = {1, 1, {319,0}, 240};
 	
-	walls[0] = wobj0;
+	walls[2] = wobj0;
 	walls[1] = wobj1;
-	walls[2] = wobj2;
+	walls[0] = wobj2;
 	walls[3] = wobj3;
 
 	objs[0] = obj0;
@@ -293,7 +293,7 @@ int main()
 
 		for(u32 i = 0; objs[i].active; i++)
 		{		
-
+			/*
 			if(objs[i].pos.x-objs[i].length/2 <=1 || objs[i].pos.x+objs[i].length/2 >= 319)
 			{
 				objs[i].vel.x = -objs[i].vel.x*mod_val.elasticity;
@@ -322,7 +322,52 @@ int main()
 				objs[i].vel.x += (objs[i].vel.x > 0 ? -fmin(friction,objs[i].vel.x) : -fmax(-friction,objs[i].vel.x));
 	
 			}
-
+			*/
+			
+			for(u32 j = 0; walls[j].active; j++)
+			{	
+				if(walls[j].direction)
+				{
+					if(objs[i].pos.y-objs[i].length/2.0>=walls[j].pos.y && 
+				           objs[i].pos.y+objs[i].length/2.0 <= walls[j].pos.y + walls[j].length)
+					{
+						//collide with left of vert wall
+						if(objs[i].pos.x<=walls[j].pos.x && objs[i].pos.x+objs[i].length/2.0 > walls[j].pos.x)
+						{
+							objs[i].vel.x = -objs[i].vel.x*mod_val.elasticity;
+							objs[i].pos.x = walls[j].pos.x-objs[i].length/2.0;
+							
+						}
+						//collide with right of vert wall
+						else if(objs[i].pos.x>=walls[j].pos.x && objs[i].pos.x-objs[i].length/2.0 < walls[j].pos.x)
+						{
+							objs[i].vel.x = -objs[i].vel.x*mod_val.elasticity;
+							objs[i].pos.x = walls[j].pos.x+objs[i].length/2.0+1;
+						}
+					}
+				}
+				else
+				{
+					if(objs[i].pos.x+objs[i].length/2.0>=walls[j].pos.x && 
+					   objs[i].pos.x-objs[i].length/2.0 <= walls[j].pos.x + walls[j].length)
+					{
+						//collide with top of horiz wall
+						if(objs[i].pos.y<=walls[j].pos.y && objs[i].pos.y+objs[i].length/2.0 >= walls[j].pos.y)
+						{
+							objs[i].vel.y = -objs[i].vel.y*mod_val.elasticity;
+							objs[i].pos.y = walls[j].pos.y-objs[i].length/2.0;
+							
+						}
+						//collide with bottom of horiz wall
+						else if(objs[i].pos.y>=walls[j].pos.y && objs[i].pos.y-objs[i].length/2.0 <= walls[j].pos.y)
+						{
+							objs[i].vel.y = -objs[i].vel.y*mod_val.elasticity;
+							objs[i].pos.y = walls[j].pos.y+objs[i].length/2.0+1;
+						}
+					}
+				}	
+			}
+			
 		}
 
 		//If the coordinates of the screen tap are inside the square, allow movement of the square
@@ -359,6 +404,9 @@ int main()
 		if(pressed & KEY_X)
 		{
 			mod_val = def;
+			objs[0] = obj0;
+			objs[1] = obj1;
+			objs[2] = obj2;
 		}
 
 		if(mod_val.gravity_from_accel)
