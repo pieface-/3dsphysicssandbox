@@ -9,14 +9,17 @@
 #include <3ds.h>
 #include <sf2d.h>
 #include "screenshot.h"
-
+#include "mod_val.h"
+#include "draw.h"
+#include "physobj.h"
+#include "wallobj.h"
 
 #define CONFIG_3D_SLIDERSTATE (*(float *)0x1FF81080)
 #define debug
 
 //forward declarations
-char* get_mod_val_id(u8);
-char* get_gravity_from_accel_id(u8);
+char* get_current_string(u8);
+char* get_gravity_from_accel_string(u8);
 
 int main()
 {
@@ -30,47 +33,52 @@ int main()
 	sf2d_set_vblank_wait(1);
 
 
-	//Variables
+	_mod_val def = 
 
-	//Represents the current modifiable value: gravity_y, gravity_x, friction, elasticity
-	u8 mod_val = 0;
-	u8 gravity_from_accel = 0;
+	{
+		0,
+		0,
+		{320/2, 240/2},
+		1.0,
+		-1,
+		{0, 0},
+		{0.0, -10.0},
+		{0.0, -10.0},
+		.5,
+		.5,
+		25.0,
+		{0, 0},
+		0
+	};
 
-	//coordinates of screen touch
-	u16 touch_x = 320/2;
-	u16 touch_y = 240/2;
+	s16 deadzone = 25;
 
-	//coordinates of rectangle (double to allow small velocities - casted to int when rendering)
-	double rect_x = 320/2;
-	double rect_y = 240/2;
+	_mod_val mod_val = def;
 
-	//increment - determines how much is added or subtracted to mod_val - is always power of 10 
-	double inc = 1.0;
+	phys_obj* objs = (phys_obj*) calloc(8, sizeof(phys_obj));
+	wall_obj* walls = (wall_obj*) calloc(8, sizeof(wall_obj));
+
+
+	phys_obj obj0 = {1, {100,100}, {0,0}, 50};
+
+	phys_obj obj1 = {1, {200, 100}, {0,-250}, 5};
+
+	phys_obj obj2 = {1, {150, 50}, {100,0}, 80};
+
+
+	wall_obj wobj0 = {1, 0, {0,0}, 320};
+	wall_obj wobj1 = {1, 1, {0,0}, 240};
+	wall_obj wobj2 = {1, 0, {0,239}, 320};
+	wall_obj wobj3 = {1, 1, {319,0}, 240};
 	
-	//boolean to determine if touch screen is currently dictating the square's location
-	u8 mov_rect = 0.0;
+	walls[0] = wobj0;
+	walls[1] = wobj1;
+	walls[2] = wobj2;
+	walls[3] = wobj3;
 
-	//records where the user tapped on the square e.g. if the top right corner is tapped, it will stay at top right corner
-	s8 offset_x = 0.0;
-	s8 offset_y = 0.0;
-
-	//x and y velocity of the square in pixels per second
-	double vel_x = 0.0;
-	double vel_y = 0.0;
-
-	//In a collision, velocity perpendicular to collision is multiplied by elasticity e.g. at 0.5, half of y speed is lost when colliding with floor 
-	double elasticity = .5;
-
-	//gravity values - will accelerate square in given direction on every frame - pixels per second^2
-	double gravity_y = -10.0;
-	double gravity_x = 0.0;
-	double gravity_y_b = -10.0;
-	double gravity_x_b = 0.0;
-	double accel_to_gravity = 25.0;
-
-	//Friciton - reduces speed parallel to wall if the wall is being touched
-	//currently not implemented well, needs to reflect gravity values	
-	double friction = .5;
+	objs[0] = obj0;
+	objs[1] = obj1;
+	objs[2] = obj2;
 
 	//HID variables
 	touchPosition touch;
@@ -86,7 +94,7 @@ int main()
 
 	//gfxSetScreenFormat(GFX_TOP, 1);
 
-	printf("\x1b[0;0HPhysics Sandbox v0.2 by PieFace");
+	printf("\x1b[0;0HPhysics Sandbox v0.3 Alpha by PieFace");
 	printf("\x1b[21;0HControls:");
 	printf("\x1b[22;0HTap and drag square to move it");
 	printf("\x1b[23;0HX - Reset Square");
@@ -107,6 +115,20 @@ int main()
 
 		hidAccelRead(&accel);
 
+		//move camera
+		if(abs(circle.dx)>= deadzone)
+		{
+			mod_val.camera.x+=circle.dx/60.0;
+			if(mod_val.mov_rect!=-1) mod_val.offset.x+=circle.dx/60.0;
+		}
+
+		if(abs(circle.dy)>= deadzone)
+		{
+			mod_val.camera.y-=circle.dy/60.0;
+			if(mod_val.mov_rect!=-1) mod_val.offset.y-=circle.dy/60.0;
+		}
+
+
 		//check button presses
 
 		//Press Start to Exit
@@ -123,115 +145,144 @@ int main()
 		//Read touch values if the screen is pressed
 		if (held & KEY_TOUCH) 
 		{
-			hidTouchRead(&touch);
-			touch_x = touch.px;
-			touch_y = touch.py;
-			if(mov_rect)
+			hidTouchRead(&mod_val.touch);
+			if(mod_val.mov_rect!=-1)
 			{
-				vel_x = (touch_x + offset_x - rect_x)*60.0f;
-				vel_y = (touch_y + offset_y - rect_y)*60.0f;
+				objs[mod_val.mov_rect].vel.x = ((double)mod_val.touch.px + mod_val.offset.x - objs[mod_val.mov_rect].pos.x)*60.0;
+				objs[mod_val.mov_rect].vel.y = ((double)mod_val.touch.py + mod_val.offset.y - objs[mod_val.mov_rect].pos.y)*60.0;
 			}
 		}
 
 		if(pressed & KEY_Y)
 		{
-			if(gravity_from_accel==0)
+			if(mod_val.gravity_from_accel==0)
 			{
-				gravity_from_accel = 1;
-				gravity_y_b = gravity_y;
-				gravity_x_b = gravity_x;
+				mod_val.gravity_from_accel = 1;
+				mod_val.gravity_b = mod_val.gravity;
 			}			
 			else
 			{
-				gravity_from_accel = 0;
-				gravity_y = gravity_y_b;
-				gravity_x = gravity_x_b;
+				mod_val.gravity_from_accel = 0;
+				mod_val.gravity = mod_val.gravity_b;
 			}		
 		}
 
 		//DPAD up - Increment current mod_val
 		if(pressed & KEY_DUP)
 		{
-			if(mod_val == 0)
+			if(mod_val.current == 0)
 			{
-				gravity_y += inc;
+				if(mod_val.gravity_from_accel)
+				{
+					mod_val.gravity_b.y += mod_val.inc;
+				}
+				else
+				{
+					mod_val.gravity.y += mod_val.inc;
+				}
 			}
 			
-			if(mod_val == 1)
+			if(mod_val.current == 1)
 			{
-				gravity_x += inc;
+				if(mod_val.gravity_from_accel)
+				{
+					mod_val.gravity_b.x += mod_val.inc;
+				}
+				else
+				{
+					mod_val.gravity.x += mod_val.inc;
+				}
 			}
 
-			if(mod_val == 2)
+			if(mod_val.current == 2)
 			{
-				elasticity += inc;
-				if(elasticity > 1) elasticity = 1;
+				mod_val.elasticity += mod_val.inc;
+				if(mod_val.elasticity > 1) mod_val.elasticity = 1;
 			}
 
-			if(mod_val == 3)
+			if(mod_val.current == 3)
 			{
-				friction += inc;
-				if(friction > 1) friction = 1;
+				mod_val.friction += mod_val.inc;
+				if(mod_val.friction > 1) mod_val.friction = 1;
+			}
+
+			if(mod_val.current == 4)
+			{
+				mod_val.curr_view ++;
+				if(!objs[mod_val.curr_view].active) mod_val.curr_view = 0;
 			}
 		}
 		
-		//DPAD down - decrement current mod_val
+		//DPAD down - decrement current mod_val.current
 		if(pressed & KEY_DDOWN)
 		{
-			if(mod_val == 0)
+			if(mod_val.current == 0)
 			{
-				if(gravity_from_accel)
+				if(mod_val.gravity_from_accel)
 				{
-					gravity_y_b -= inc;
+					mod_val.gravity_b.y -= mod_val.inc;
 				}
 				else
 				{
-					gravity_y -= inc;
+					mod_val.gravity.y -= mod_val.inc;
 				}
 			}
 			
-			if(mod_val == 1)
+			if(mod_val.current == 1)
 			{
-				if(gravity_from_accel)
+				if(mod_val.gravity_from_accel)
 				{
-					gravity_x_b -= inc;
+					mod_val.gravity_b.x -= mod_val.inc;
 				}
 				else
 				{
-					gravity_x -= inc;
+					mod_val.gravity.x -= mod_val.inc;
 				}
 			}
 
-			if(mod_val == 2)
+			if(mod_val.current == 2)
 			{
-				elasticity -= inc;
-				if(elasticity < 0) elasticity = 0;
+				mod_val.elasticity -= mod_val.inc;
+				if(mod_val.elasticity < 0) mod_val.elasticity = 0;
 			}
 
-			if(mod_val == 3)
+			if(mod_val.current == 3)
 			{
-				friction -= inc;
-				if(friction < 0) friction = 0;
+				mod_val.friction -= mod_val.inc;
+				if(mod_val.friction < 0) mod_val.friction = 0;
+			}
+
+			if(mod_val.current == 4)
+			{
+				if(mod_val.curr_view == 0)
+				{
+					for(mod_val.curr_view = 0; objs[mod_val.curr_view + 1].active; 
+						mod_val.curr_view ++);
+				}
+				else
+				{
+					mod_val.curr_view --;
+				}
 			}
 		}
 
-		//DPAD Left and Right - Change mod_val
+		//DPAD Left and Right - Change mod_val.current
 		if(pressed & KEY_DLEFT)
 		{
-			mod_val--;
-			if (mod_val > 3) mod_val = 3;
+			mod_val.current--;
+			if (mod_val.current > 4) mod_val.current = 4;
 		}
 		
 		if(pressed & KEY_DRIGHT)
 		{
-			mod_val++;
-			if (mod_val > 3) mod_val = 0;
+			mod_val.current++;
+			if (mod_val.current > 4) mod_val.current = 0;
 		}
 		
 
 		//L and R - Multiply and divide increment by 10
-		if(pressed & KEY_L) inc *= 10;
-		if(pressed & KEY_R) inc /= 10;		
+		if(pressed & KEY_L) mod_val.inc *= 10;
+		if(pressed & KEY_R) mod_val.inc /= 10;		
 
 
 		//Collisions and Friction
@@ -239,108 +290,130 @@ int main()
 		//Inverts velocity perpendicular to collision and gradually reduces velocity parallel to collision
 
 		//Collision and friction with left or right edge
-		if(rect_x-25 <=1 || rect_x+25 >= 319)
-		{
-			vel_x = -vel_x*elasticity;
-			//rect_x = (rect_x <=25 ? 0 + 25 : 320 - 25);
-			if(rect_x < 25) rect_x = 25;
-			if(rect_x > 320 - 25) rect_x = 320-25;
-			vel_y += (vel_y > 0 ? -fmin(friction*abs(gravity_x),vel_y) : -fmax(-friction*abs(gravity_x),vel_y));
-		}
-		
-		//Collision and friction with top and bottom edge
-		if(rect_y-25 <=1 || rect_y+25 >= 239) 
-		{
-			vel_y = -vel_y*elasticity;
-			//rect_y = (rect_y <=25 ? 0 + 25 : 240 - 25);
-			if(rect_y < 25) rect_y = 25;
-			if(rect_y > 240 - 25) rect_y = 240-25;
-			vel_x += (vel_x > 0 ? -fmin(friction*abs(gravity_y),vel_x) : -fmax(-friction*abs(gravity_y),vel_x));
+
+		for(u32 i = 0; objs[i].active; i++)
+		{		
+
+			if(objs[i].pos.x-objs[i].length/2 <=1 || objs[i].pos.x+objs[i].length/2 >= 319)
+			{
+				objs[i].vel.x = -objs[i].vel.x*mod_val.elasticity;
+				//rect_x = (rect_x <=25 ? 0 + 25 : 320 - 25);				
+				if(objs[i].pos.x < 1.0 + objs[i].length/2.0) objs[i].pos.x = 1.0 + objs[i].length/2.0;
+				if(objs[i].pos.x > 319.0 - objs[i].length/2.0) objs[i].pos.x = 319.0-objs[i].length/2.0;
+				if(objs[i].pos.x < 1.0 + objs[i].length/2.0 || objs[i].pos.x > 319.0 - objs[i].length/2.0) 
+					objs[i].vel.x -= mod_val.gravity.x;
+				
+				double friction = mod_val.friction*abs(mod_val.gravity.x)*objs[i].length/50.0*objs[i].length/50.0;
+				objs[i].vel.y += (objs[i].vel.y > 0 ? -fmin(friction,objs[i].vel.y) : -fmax(-friction,objs[i].vel.y));
+			}
+			
+			//Collision and friction with top and bottom edge
+			if(objs[i].pos.y-objs[i].length/2 <=1 || objs[i].pos.y+objs[i].length/2 >= 239) 
+			{
+				objs[i].vel.y = -objs[i].vel.y*mod_val.elasticity;
+				//rect_y = (rect_y <=25 ? 0 + 25 : 240 - 25);
+				if(objs[i].pos.y < 1.0 + objs[i].length/2.0) objs[i].pos.y = 1.0 + objs[i].length/2.0;
+				if(objs[i].pos.y > 239.0 - objs[i].length/2.0) objs[i].pos.y = 239-objs[i].length/2.0;
+
+				if(objs[i].pos.y < 1.0 + objs[i].length/2.0 || objs[i].pos.y > 239.0 - objs[i].length/2.0)
+					objs[i].vel.y += mod_val.gravity.y;
+				
+				double friction = mod_val.friction*abs(mod_val.gravity.y)*objs[i].length/50.0*objs[i].length/50.0;
+				objs[i].vel.x += (objs[i].vel.x > 0 ? -fmin(friction,objs[i].vel.x) : -fmax(-friction,objs[i].vel.x));
+	
+			}
 
 		}
 
 		//If the coordinates of the screen tap are inside the square, allow movement of the square
-		if ((pressed & KEY_TOUCH)&&(touch_x > rect_x-25)&&(touch_x < rect_x+25)&&(touch_y > rect_y-25)&&(touch_y < rect_y+25))
+		if (pressed & KEY_TOUCH)
 		{
-			mov_rect = 1;
-			offset_x = rect_x - touch_x;
-			offset_y = rect_y - touch_y;
+
+			for(u32 i = 0; objs[i].active; i++)
+			{
+
+				if ((mod_val.touch.px >= objs[i].pos.x-objs[i].length/2-mod_val.camera.x) && 
+					(mod_val.touch.px <= objs[i].pos.x+objs[i].length/2-mod_val.camera.x) && 
+					(mod_val.touch.py >= objs[i].pos.y-objs[i].length/2-mod_val.camera.y) && 
+					(mod_val.touch.py <= objs[i].pos.y+objs[i].length/2-mod_val.camera.y))
+				{
+					mod_val.mov_rect = i;
+					mod_val.offset.x = objs[i].pos.x - mod_val.touch.px;
+					mod_val.offset.y = objs[i].pos.y - mod_val.touch.py;
+					break;
+				}
+			}		
 		}
 		
 		//If the screen is let go, stop allowing screen to control square
 		if ((released & KEY_TOUCH))
 		{
-			mov_rect = 0;
-			offset_x = 0;
-			offset_y = 0;
+			mod_val.mov_rect = -1;
+			mod_val.offset.x = 0;
+			mod_val.offset.y = 0;
 		}
+
+
 
 		//Press x to reset all values
 		if(pressed & KEY_X)
 		{
-			mod_val = 0;
-			touch_x = 320/2;
-			touch_y = 240/2;
-			rect_x = 320/2;
-			rect_y = 240/2;
-			inc = 1.0;
-			mov_rect = 0.0;
-			offset_x = 0.0;
-			offset_y = 0.0;
-			vel_x = 0.0;
-			vel_y = 0.0;
-			elasticity = .5;
-			gravity_y = -10.0;
-			gravity_x = 0.0;
-			gravity_y_b = -10.0;
-			gravity_x_b = 0;	
-			friction = .5;
-			gravity_from_accel = 0;
+			mod_val = def;
 		}
 
-		if(gravity_from_accel)
+		if(mod_val.gravity_from_accel)
 		{
-			gravity_x = accel.x / -accel_to_gravity;
-			gravity_y = accel.z / accel_to_gravity;
+			mod_val.gravity.x = accel.x / -mod_val.accel_to_gravity;
+			mod_val.gravity.y = accel.z / mod_val.accel_to_gravity;
 		}
 
 		//Determines how to move the square
 		//If the touch screen is not dictating the square's location, apply gravity and velocity
 		//Else move square to where screen is touched		
-		if(!mov_rect)
+		
+		for(u32 i = 0; objs[i].active; i++)
 		{
-			vel_y -= gravity_y;
-			vel_x += gravity_x;
-	
-			rect_x += vel_x/60.0f;
-			rect_y += vel_y/60.0f;
-		}
-		else
-		{
-			rect_x = touch_x + offset_x;
-			rect_y = touch_y + offset_y;
+
+			if(mod_val.mov_rect==i)
+			{
+				objs[i].pos.x = mod_val.touch.px + mod_val.offset.x;
+				objs[i].pos.y = mod_val.touch.py + mod_val.offset.y;
+			}
+			else
+			{	
+				objs[i].vel.y -= mod_val.gravity.y;
+				objs[i].vel.x += mod_val.gravity.x;
+		
+				objs[i].pos.x += objs[i].vel.x/60.0f;
+				objs[i].pos.y += objs[i].vel.y/60.0f;
+			}
 		}
 
 		//Live printing of important values
 		#ifdef debug
 		printf("\x1b[0;41H%s:%5.2f","fps",sf2d_get_fps());		
-		printf("\x1b[1;0H%s:%03d,%03d","touch_coord",touch_x,touch_y);
-		printf("\x1b[2;0H%s:%03.0f,%03.0f","rect_coord",rect_x,rect_y);
-		printf("\x1b[3;0H%s:%03d,%03d","offset",offset_x,offset_y);
-		printf("\x1b[4;0H%s:%010.3f,%010.3f","velocity",vel_x,-vel_y);
-		printf("\x1b[5;0H%s:%f,%f","gravity",gravity_x,gravity_y);
-		printf("\x1b[6;0H%s:%f","elasticity",elasticity);
-		printf("\x1b[7;0H%s:%f","friction",friction);
-		printf("\x1b[8;0H%s:%f","increment",inc);		
-		printf("\x1b[9;0H%s:%s","mod_val",get_mod_val_id(mod_val));
-		printf("\x1b[10;0H%s:%s","gravity_from_accel", get_gravity_from_accel_id(gravity_from_accel));
-		//printf("\x1b[12;0H%s x:%d y:%d z:%d                      ","accel", accel.x, accel.y, accel.z);	
+		printf("\x1b[1;0H%s:%03d,%03d","touch_coord",mod_val.touch.px,mod_val.touch.py);
+		printf("\x1b[2;0H%s:%03.0f,%03.0f","rect_coord",objs[mod_val.curr_view].pos.x,objs[mod_val.curr_view].pos.y);
+		printf("\x1b[3;0H%s:%05.0f,%05.0f","offset",mod_val.offset.x,mod_val.offset.y);
+		printf("\x1b[4;0H%s:%010.3f,%010.3f","velocity",objs[mod_val.curr_view].vel.x,-objs[mod_val.curr_view].vel.y);
+		printf("\x1b[5;0H%s:%f,%f","gravity",mod_val.gravity.x,mod_val.gravity.y);
+		printf("\x1b[6;0H%s:%f","elasticity",mod_val.elasticity);
+		printf("\x1b[7;0H%s:%f","friction",mod_val.friction);
+		printf("\x1b[8;0H%s:%f","increment",mod_val.inc);		
+		printf("\x1b[12;0H%s:%s","mod_val",get_current_string(mod_val.current));
+		printf("\x1b[11;0H%s:%s","gravity_from_accel", get_gravity_from_accel_string(mod_val.gravity_from_accel));
+		printf("\x1b[9;0H%s:%02d","curr_view",mod_val.curr_view);
+		printf("\x1b[10;0H%s:%02d","mov_rect",mod_val.mov_rect);
+		printf("\x1b[13;0H%s:%04d,%04d","circle pad",circle.dx,circle.dy);
+		printf("\x1b[14;0H%s:%05.0f,%05.0f","camera",mod_val.camera.x,mod_val.camera.y);	
 		#endif
 
 		//draw frame
 		sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
 
-		sf2d_draw_rectangle((int)rect_x-25, (int)rect_y-25, 50, 50, RGBA8(0xFF, 0x00, 0xFF, 0xFF));
+		draw_phys_objs(objs, mod_val.camera);
+
+		draw_wall_objs(walls, mod_val.camera);
 		
 		sf2d_end_frame();
 
@@ -353,16 +426,17 @@ int main()
 }
 
 //returns string of mod_val from id
-char* get_mod_val_id(u8 id)
+char* get_current_string(u8 id)
 {
 	if(id==0) return "gravity_y ";
 	if(id==1) return "gravity_x ";
 	if(id==2) return "elasticity";
 	if(id==3) return "friction  ";
+	if(id==4) return "curr_view ";
 	return "err_bad_id";
 }
 
-char* get_gravity_from_accel_id(u8 id)
+char* get_gravity_from_accel_string(u8 id)
 {
 	if(id == 0 ) return "off";
 	return "on ";

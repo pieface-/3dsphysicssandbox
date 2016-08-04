@@ -1,6 +1,9 @@
 //Copyright (c) 2016 PieFace
 //Screenshot.h
 
+#ifndef _screenshot_h
+#define _screenshot_h
+
 typedef struct FILE_HEADER 
 {
 	u16 type;
@@ -32,3 +35,5 @@ void write_file_header(file_header*, FILE*);
 void write_image_header(image_header*, FILE*);
 void write_framebuffer_RGB888(FILE*,u32);
 void write_framebuffer_RGB565(FILE*,u32);
+
+#endif
