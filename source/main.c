@@ -336,13 +336,19 @@ int main()
 						{
 							objs[i].vel.x = -objs[i].vel.x*mod_val.elasticity;
 							objs[i].pos.x = walls[j].pos.x-objs[i].length/2.0;
+				
+							double friction=mod_val.friction*abs(mod_val.gravity.x)*objs[i].length/50.0*objs[i].length/50.0;
+							objs[i].vel.y+=(objs[i].vel.y>0?-fmin(friction,objs[i].vel.y):-fmax(-friction,objs[i].vel.y));
 							
 						}
 						//collide with right of vert wall
-						else if(objs[i].pos.x>=walls[j].pos.x && objs[i].pos.x-objs[i].length/2.0 < walls[j].pos.x)
+						else if(objs[i].pos.x>=walls[j].pos.x && objs[i].pos.x-objs[i].length/2.0 < walls[j].pos.x + 1)
 						{
 							objs[i].vel.x = -objs[i].vel.x*mod_val.elasticity;
 							objs[i].pos.x = walls[j].pos.x+objs[i].length/2.0+1;
+
+							double friction=mod_val.friction*abs(mod_val.gravity.x)*objs[i].length/50.0*objs[i].length/50.0;
+							objs[i].vel.y+=(objs[i].vel.y>0?-fmin(friction,objs[i].vel.y):-fmax(-friction,objs[i].vel.y));
 						}
 					}
 				}
@@ -356,13 +362,19 @@ int main()
 						{
 							objs[i].vel.y = -objs[i].vel.y*mod_val.elasticity;
 							objs[i].pos.y = walls[j].pos.y-objs[i].length/2.0;
+
+							double friction=mod_val.friction*abs(mod_val.gravity.y)*objs[i].length/50.0*objs[i].length/50.0;
+							objs[i].vel.x+=(objs[i].vel.x>0?-fmin(friction,objs[i].vel.x):-fmax(-friction,objs[i].vel.x));
 							
 						}
 						//collide with bottom of horiz wall
-						else if(objs[i].pos.y>=walls[j].pos.y && objs[i].pos.y-objs[i].length/2.0 <= walls[j].pos.y)
+						else if(objs[i].pos.y>=walls[j].pos.y && objs[i].pos.y-objs[i].length/2.0 <= walls[j].pos.y + 1)
 						{
 							objs[i].vel.y = -objs[i].vel.y*mod_val.elasticity;
 							objs[i].pos.y = walls[j].pos.y+objs[i].length/2.0+1;
+
+							double friction=mod_val.friction*abs(mod_val.gravity.y)*objs[i].length/50.0*objs[i].length/50.0;
+							objs[i].vel.x+=(objs[i].vel.x>0?-fmin(friction,objs[i].vel.x):-fmax(-friction,objs[i].vel.x));
 						}
 					}
 				}	
