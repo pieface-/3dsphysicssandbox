@@ -63,8 +63,8 @@ int main()
 
 	_mod_val mod_val = def;
 
-	phys_obj* objs = (phys_obj*) calloc(32, sizeof(phys_obj));
-	wall_obj* walls = (wall_obj*) calloc(32, sizeof(wall_obj));
+	phys_obj* objs = (phys_obj*) calloc(33, sizeof(phys_obj));
+	wall_obj* walls = (wall_obj*) calloc(33, sizeof(wall_obj));
 	
 	wall_obj wall_null = {};
 	phys_obj obj_null = {};
@@ -116,6 +116,7 @@ int main()
 
 	consoleSelect(&top);
 	printf("Physics Sandbox v0.3 by PieFace\n\n");
+	printf("Global Info              Object Info");
 	
 	consoleSelect(&controls);
 	printf("Controls:\n");
@@ -129,9 +130,6 @@ int main()
 	printf("Circle Pad - Move camera\n");
 	printf("Select - Save screenshot\n");	
 	printf("Start - Exit");
-	
-	consoleSelect(&top);
-	printf("Global Info              Object Info");
 	
 	
 	while (aptMainLoop()) {

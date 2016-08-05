@@ -2,20 +2,19 @@
 An application for messing with physics on the 3ds
 
 ###Current Features:  
-- Manipulate multiple different sized squares with the stylus  
+- Manipulate multiple different sized squares with the stylus
+- Objects will bounce off of each other  
 - The squares are affected by gravity, with walls, and friction  
 - Modifiable gravity, collision elasticity, and friction values  
 - Take a screenshot
 - Control gravity by tilting 3ds (accelerometer)
 - Move camera with circle pad
-- Drawable (but not functional) walls
-- Code optimization and modularization
-- different squares and walls can be made by editing code in main.c
+- Walls that squares will bounce off of
+- different squares and walls can be made using on screen ui
 
 ###Possible plans for the Future:  
 - Fix Banner Sound (Warning: sound may be irritable)
-- Save and load state to and from file (coming v0.3)
-- objects interact with each other (coming v0.3)
+- Save and load state to and from file (coming v0.4)
 - Different kinds of objects (like circles or custom shapes)  
 - Proper implementation of forces/momentum and vectors  
 - Tension and ropes  
