@@ -300,70 +300,19 @@ int main()
 			{
 				if(i!=j)
 				{
-					/*
-					//collide with top of object j
-					if( objs[i].pos.x-objs[i].length/2.0 <=	objs[j].pos.x+objs[j].length/2.0 &&
-						objs[i].pos.x+objs[i].length/2.0 >=	objs[j].pos.x-objs[j].length/2.0 &&
-						objs[i].pos.y 					 <=	objs[j].pos.y-objs[j].length/2.0 &&
-						objs[i].pos.y+objs[i].length/2.0 >=	objs[j].pos.y-objs[j].length/2.0)
-					{
-						objs[i].vel.y = -objs[i].vel.y*mod_val.elasticity;
-						objs[i].pos.y = objs[j].pos.y-objs[j].length/2.0-objs[i].length/2.0;
-						
-						double friction=mod_val.friction*abs(mod_val.gravity.y)*objs[i].length/50.0*objs[i].length/50.0;
-						objs[i].vel.x+=(objs[i].vel.x>0?-fmin(friction,objs[i].vel.x):-fmax(-friction,objs[i].vel.x));
-					}
-					//collide with bottom of object j
-					
-					else if(objs[i].pos.x-objs[i].length/2.0 <=	objs[j].pos.x+objs[j].length/2.0 &&
-							objs[i].pos.x+objs[i].length/2.0 >=	objs[j].pos.x-objs[j].length/2.0 &&
-							objs[i].pos.y 					 >=	objs[j].pos.y+objs[j].length/2.0 &&
-							objs[i].pos.y-objs[i].length/2.0 <=	objs[j].pos.y+objs[j].length/2.0)
-					{
-						objs[i].vel.y = -objs[i].vel.y*mod_val.elasticity;
-						objs[i].pos.y = objs[j].pos.y+objs[j].length/2.0+objs[i].length/2.0;
-						
-						double friction=mod_val.friction*abs(mod_val.gravity.y)*objs[i].length/50.0*objs[i].length/50.0;
-						objs[i].vel.x+=(objs[i].vel.x>0?-fmin(friction,objs[i].vel.x):-fmax(-friction,objs[i].vel.x));
-					}
-					
-					//collide with left of object j
-					else if(objs[i].pos.y-objs[i].length/2.0 <= objs[j].pos.y+objs[j].length/2.0 &&
-							objs[i].pos.y+objs[i].length/2.0 >= objs[j].pos.y-objs[j].length/2.0 &&
-							objs[i].pos.x					 <= objs[j].pos.x-objs[j].length/2.0 &&
-							objs[i].pos.x+objs[i].length/2.0 >= objs[j].pos.x-objs[j].length/2.0 )
-					{
-						objs[i].vel.x = -objs[i].vel.x*mod_val.elasticity;
-						objs[i].pos.x = objs[j].pos.x-objs[j].length/2.0-objs[i].length/2.0;
-				
-						double friction=mod_val.friction*abs(mod_val.gravity.x)*objs[i].length/50.0*objs[i].length/50.0;
-						objs[i].vel.y+=(objs[i].vel.y>0?-fmin(friction,objs[i].vel.y):-fmax(-friction,objs[i].vel.y));
-					}
-					//collide with right of object j
-					
-					else if(objs[i].pos.y-objs[i].length/2.0 <= objs[j].pos.y+objs[j].length/2.0 &&
-							objs[i].pos.y+objs[i].length/2.0 >= objs[j].pos.y-objs[j].length/2.0 &&
-							objs[i].pos.x					 >= objs[j].pos.x+objs[j].length/2.0 &&
-							objs[i].pos.x+objs[i].length/2.0 <= objs[j].pos.x+objs[j].length/2.0 )
-					{
-						objs[i].vel.x = -objs[i].vel.x*mod_val.elasticity;
-						objs[i].pos.x = objs[j].pos.x+objs[j].length/2.0+objs[i].length/2.0;
-				
-						double friction=mod_val.friction*abs(mod_val.gravity.x)*objs[i].length/50.0*objs[i].length/50.0;
-						objs[i].vel.y+=(objs[i].vel.y>0?-fmin(friction,objs[i].vel.y):-fmax(-friction,objs[i].vel.y));
-					}
-					*/
-					
+	
 					if(detect_collision(objs[i], objs[j])==TOP_COLLISION)
 					{
-						printf("\x1b[0;0Htest");
-						objs[i].vel.y = -objs[i].vel.y*mod_val.elasticity;
-						//objs[i].pos.y = objs[j].pos.y+objs[j].length/2.0+objs[i].length/2.0+1;
+						calculate_velocity(objs[i], objs[j], VELOCITY_Y, &objs[i].vel.y, &objs[j].vel.y);
+					
+						objs[i].vel.y = objs[i].vel.y*mod_val.elasticity;
+						
+
 						
 						double friction=mod_val.friction*abs(mod_val.gravity.y)*objs[i].length/50.0*objs[i].length/50.0;
 						objs[i].vel.x+=(objs[i].vel.x>0?-fmin(friction,objs[i].vel.x):-fmax(-friction,objs[i].vel.x));
 						
-						objs[j].vel.y = -objs[j].vel.y*mod_val.elasticity;
+						objs[j].vel.y = objs[j].vel.y*mod_val.elasticity;
 						objs[j].pos.y = objs[i].pos.y-objs[i].length/2.0-objs[j].length/2.0;
 						
 						double friction1=mod_val.friction*abs(mod_val.gravity.y)*objs[j].length/50.0*objs[j].length/50.0;
@@ -372,14 +321,18 @@ int main()
 					//mostly working properly
 					else if(detect_collision(objs[i], objs[j])==BOT_COLLISION)
 					{
-						printf("\x1b[0;0Htest");
-						objs[j].vel.y = -objs[j].vel.y*mod_val.elasticity;
+
+						
 						//objs[j].pos.y = objs[i].pos.y-objs[i].length/2.0-objs[j].length/2.0;
+						
+						calculate_velocity(objs[i], objs[j], VELOCITY_Y, &objs[i].vel.y, &objs[j].vel.y);
+						
+						objs[j].vel.y = objs[j].vel.y*mod_val.elasticity;
 						
 						double friction=mod_val.friction*abs(mod_val.gravity.y)*objs[i].length/50.0*objs[j].length/50.0;
 						objs[j].vel.x+=(objs[j].vel.x>0?-fmin(friction,objs[j].vel.x):-fmax(-friction,objs[j].vel.x));
 						
-						objs[i].vel.y = -objs[i].vel.y*mod_val.elasticity;
+						objs[i].vel.y = objs[i].vel.y*mod_val.elasticity;
 						objs[i].pos.y = objs[j].pos.y-objs[j].length/2.0-objs[i].length/2.0;
 						
 						double friction1=mod_val.friction*abs(mod_val.gravity.y)*objs[j].length/50.0*objs[i].length/50.0;
@@ -387,14 +340,16 @@ int main()
 					}
 					else if(detect_collision(objs[i], objs[j])==RIGHT_COLLISION)
 					{
-						printf("\x1b[0;0Htest");
-						objs[i].vel.x = -objs[i].vel.x*mod_val.elasticity;
+						
+						calculate_velocity(objs[i], objs[j], VELOCITY_X, &objs[i].vel.x, &objs[j].vel.x);
+						
+						objs[i].vel.x = objs[i].vel.x*mod_val.elasticity;
 						objs[i].pos.x = objs[j].pos.x+objs[j].length/2.0+objs[i].length/2.0;
 						
 						double friction=mod_val.friction*abs(mod_val.gravity.x)*objs[i].length/50.0*objs[i].length/50.0;
 						objs[i].vel.y+=(objs[i].vel.y>0?-fmin(friction,objs[i].vel.y):-fmax(-friction,objs[i].vel.y));
 						
-						objs[j].vel.x = -objs[j].vel.x*mod_val.elasticity;
+						objs[j].vel.x = objs[j].vel.x*mod_val.elasticity;
 						//objs[j].pos.y = objs[i].pos.y+objs[i].length/2.0+objs[j].length/2.0;
 						
 						double friction1=mod_val.friction*abs(mod_val.gravity.x)*objs[j].length/50.0*objs[j].length/50.0;
@@ -402,14 +357,16 @@ int main()
 					}
 					else if(detect_collision(objs[i], objs[j])==LEFT_COLLISION)
 					{
-						printf("\x1b[0;0Htest");
-						objs[j].vel.x = -objs[j].vel.x*mod_val.elasticity;
+						
+						calculate_velocity(objs[i], objs[j], VELOCITY_X, &objs[i].vel.x, &objs[j].vel.x);
+						
+						objs[j].vel.x = objs[j].vel.x*mod_val.elasticity;
 						//objs[j].pos.y = objs[i].pos.y-objs[i].length/2.0-objs[j].length/2.0;
 						
 						double friction=mod_val.friction*abs(mod_val.gravity.x)*objs[i].length/50.0*objs[j].length/50.0;
 						objs[j].vel.y+=(objs[j].vel.y>0?-fmin(friction,objs[j].vel.y):-fmax(-friction,objs[j].vel.y));
 						
-						objs[i].vel.x = -objs[i].vel.x*mod_val.elasticity;
+						objs[i].vel.x = objs[i].vel.x*mod_val.elasticity;
 						objs[i].pos.x = objs[j].pos.x-objs[j].length/2.0-objs[i].length/2.0;
 						
 						double friction1=mod_val.friction*abs(mod_val.gravity.x)*objs[j].length/50.0*objs[i].length/50.0;

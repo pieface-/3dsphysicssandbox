@@ -51,6 +51,24 @@ u8 detect_collision(phys_obj o1, phys_obj o2)
 	return NO_COLLISION;
 }
 
+void calculate_velocity(phys_obj o1, phys_obj o2, u8 vel_dir, double* v1, double* v2)
+{
+	double m1 = o1.length/50.0*o1.length/50.0;
+	double m2 = o2.length/50.0*o2.length/50.0;
+	
+	if(vel_dir == VELOCITY_X)
+	{
+		*v1 = (m1-m2)/(m1+m2)*o1.vel.x + (2*m2)/(m1+m2)*o2.vel.x;
+		*v2 = (2*m1)/(m1+m2)*o1.vel.x + (m1-m2)/(m1+m2)*o2.vel.x;
+	}
+	else if(vel_dir == VELOCITY_Y)
+	{
+		*v1 = (m1-m2)/(m1+m2)*o1.vel.y + (2*m2)/(m1+m2)*o2.vel.y;
+		*v2 = (2*m1)/(m1+m2)*o1.vel.y + (m1-m2)/(m1+m2)*o2.vel.y;
+	}
+
+}
+
 void calculate_collision(phys_obj o1, phys_obj o2, _mod_val mod_val)
 {
 	
