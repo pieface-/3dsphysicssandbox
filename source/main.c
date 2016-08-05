@@ -110,7 +110,7 @@ int main()
 	
 	consoleSetWindow(&global_info, 0, 3, 25, 12);
 	consoleSetWindow(&obj_info, 25, 3, 25, 12);
-	consoleSetWindow(&controls, 0, 20, 50, 10);
+	consoleSetWindow(&controls, 0, 19, 50, 11);
 
 	//gfxSetScreenFormat(GFX_TOP, 1);
 
@@ -126,6 +126,7 @@ int main()
 	printf("DPad U&D - Increment and decrement mod_val\n");
 	printf("L&R - Change increment (pow of 10)\n");
 	printf("Y - Toggle gravity from gyroscope\n");
+	printf("Circle Pad - Move camera\n");
 	printf("Select - Save screenshot\n");	
 	printf("Start - Exit");
 	
