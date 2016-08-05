@@ -22,8 +22,13 @@
 char* get_current_string(u8);
 char* get_gravity_from_accel_string(u8);
 
+FS_Archive sdmc;
+
 int main()
 {
+	sdmc = (FS_Archive){ARCHIVE_SDMC, (FS_Path){PATH_EMPTY, 1, (u8*)""}};
+	FSUSER_OpenArchive(&sdmc);
+
 	// Set the random seed based on the time
 	srand(time(NULL));
 
@@ -49,6 +54,8 @@ int main()
 		.5,
 		25.0,
 		{0, 0},
+		0,
+		0,
 		0
 	};
 
@@ -56,8 +63,11 @@ int main()
 
 	_mod_val mod_val = def;
 
-	phys_obj* objs = (phys_obj*) calloc(8, sizeof(phys_obj));
-	wall_obj* walls = (wall_obj*) calloc(8, sizeof(wall_obj));
+	phys_obj* objs = (phys_obj*) calloc(32, sizeof(phys_obj));
+	wall_obj* walls = (wall_obj*) calloc(32, sizeof(wall_obj));
+	
+	wall_obj wall_null = {};
+	phys_obj obj_null = {};
 
 
 	phys_obj obj0 = {1, {100,100}, {0,0}, 50};
@@ -90,22 +100,42 @@ int main()
 	u32 released;
 
 	HIDUSER_EnableAccelerometer();
-
-	consoleInit(GFX_TOP, NULL);
+	
+	PrintConsole top, global_info, obj_info, controls;
+	
+	consoleInit(GFX_TOP, &top);
+	consoleInit(GFX_TOP, &global_info);
+	consoleInit(GFX_TOP, &obj_info);
+	consoleInit(GFX_TOP, &controls);
+	
+	consoleSetWindow(&global_info, 0, 3, 25, 12);
+	consoleSetWindow(&obj_info, 25, 3, 25, 12);
+	consoleSetWindow(&controls, 0, 20, 50, 10);
 
 	//gfxSetScreenFormat(GFX_TOP, 1);
 
-	printf("\x1b[0;0HPhysics Sandbox v0.3 Alpha by PieFace");
-	printf("\x1b[21;0HControls:");
-	printf("\x1b[22;0HTap and drag square to move it");
-	printf("\x1b[23;0HX - Reset Square");
-	printf("\x1b[24;0HDPad L&R - Change between mod_vals");
-	printf("\x1b[25;0HDPad U&D - Increment and decrement mod_val");
-	printf("\x1b[26;0HL&R - Change increment (pow of 10)");
-	printf("\x1b[27;0HY - Toggle gravity from gyroscope");
-	printf("\x1b[28;0HSelect - Save screenshot");	
-	printf("\x1b[29;0HStart - Exit");
+	consoleSelect(&top);
+	printf("Physics Sandbox v0.3 by PieFace\n\n");
+	
+	consoleSelect(&controls);
+	printf("Controls:\n");
+	printf("Tap and drag square to move it\n");
+	printf("X - Reset to default\n");
+	printf("B - Teleport selected square to center\n");
+	printf("DPad L&R - Change between mod_vals\n");
+	printf("DPad U&D - Increment and decrement mod_val\n");
+	printf("L&R - Change increment (pow of 10)\n");
+	printf("Y - Toggle gravity from gyroscope\n");
+	printf("Select - Save screenshot\n");	
+	printf("Start - Exit");
+	
+	consoleSelect(&top);
+	printf("Global Info              Object Info");
+	
+	
 	while (aptMainLoop()) {
+	
+		consoleSelect(&top);
 
 		//gather inputs
 		hidScanInput();
@@ -152,6 +182,15 @@ int main()
 				objs[mod_val.mov_rect].vel.x = ((double)mod_val.touch.px + mod_val.offset.x - objs[mod_val.mov_rect].pos.x)*60.0;
 				objs[mod_val.mov_rect].vel.y = ((double)mod_val.touch.py + mod_val.offset.y - objs[mod_val.mov_rect].pos.y)*60.0;
 			}
+		}
+		
+		if(pressed & KEY_B)
+		{
+			if(!mod_val.obj_type)
+			{
+				objs[mod_val.curr_view].pos = (_coord){160,120};
+				objs[mod_val.curr_view].vel = (_vector){0,0};
+			}		
 		}
 
 		if(pressed & KEY_Y)
@@ -206,11 +245,96 @@ int main()
 				mod_val.friction += mod_val.inc;
 				if(mod_val.friction > 1) mod_val.friction = 1;
 			}
-
+			
 			if(mod_val.current == 4)
 			{
+				mod_val.scope++;
+				if(mod_val.scope>1) mod_val.scope = 0;
+			}
+			
+			if(mod_val.current == 5)
+			{
+				mod_val.obj_type ++;
+				if(mod_val.obj_type>1) mod_val.obj_type = 0;
+				
+				consoleSelect(&obj_info);
+				consoleClear();
+				consoleSelect(&top);
+			}
+
+			if(mod_val.current == 6)
+			{
 				mod_val.curr_view ++;
-				if(!objs[mod_val.curr_view].active) mod_val.curr_view = 0;
+				if(mod_val.curr_view > 31) mod_val.curr_view = 0;
+			}
+			
+			if(mod_val.current == 7)
+			{
+				if(mod_val.obj_type)
+				{
+					walls[mod_val.curr_view].active++;
+					if(walls[mod_val.curr_view].active>1) walls[mod_val.curr_view].active=0;
+				}
+				else
+				{
+					objs[mod_val.curr_view].active++;
+					if(objs[mod_val.curr_view].active>1) objs[mod_val.curr_view].active=0;
+				}
+			}
+			
+			if(mod_val.current == 8)
+			{
+				if(mod_val.obj_type)
+				{
+					walls[mod_val.curr_view].pos.x += mod_val.inc;
+				}
+				else
+				{
+					objs[mod_val.curr_view].pos.x += mod_val.inc;
+				}			
+			
+			}
+			
+			if(mod_val.current == 9)
+			{
+				if(mod_val.obj_type)
+				{
+					walls[mod_val.curr_view].pos.y += mod_val.inc;
+				}
+				else
+				{
+					objs[mod_val.curr_view].pos.y += mod_val.inc;
+				}			
+			
+			}
+			
+			if(mod_val.current == 10)
+			{
+				walls[mod_val.curr_view].direction++;
+				if(walls[mod_val.curr_view].direction > 1) walls[mod_val.curr_view].direction = 0;
+			
+			}
+			
+			if(mod_val.current == 11)
+			{
+				objs[mod_val.curr_view].vel.x += mod_val.inc;
+			}
+			
+			if(mod_val.current == 12)
+			{
+				objs[mod_val.curr_view].vel.y += mod_val.inc;
+			}
+			
+			if(mod_val.current == 13)
+			{
+				if(mod_val.obj_type)
+				{
+					walls[mod_val.curr_view].length += mod_val.inc;
+				}
+				else
+				{
+					objs[mod_val.curr_view].length += mod_val.inc;
+				}
 			}
 		}
 		
@@ -255,14 +379,92 @@ int main()
 
 			if(mod_val.current == 4)
 			{
-				if(mod_val.curr_view == 0)
+				mod_val.scope--;
+				if(mod_val.scope>1) mod_val.scope = 1;
+			}
+			
+			if(mod_val.current == 5)
+			{
+				mod_val.obj_type --;
+				if(mod_val.obj_type>1) mod_val.obj_type = 1;
+				
+				consoleSelect(&obj_info);
+				consoleClear();
+				consoleSelect(&top);
+			}
+
+			if(mod_val.current == 6)
+			{
+					mod_val.curr_view --;
+					if(mod_val.curr_view > 31) mod_val.curr_view = 31;
+			}
+			
+			if(mod_val.current == 7)
+			{
+				if(mod_val.obj_type)
 				{
-					for(mod_val.curr_view = 0; objs[mod_val.curr_view + 1].active; 
-						mod_val.curr_view ++);
+					walls[mod_val.curr_view].active--;
+					if(walls[mod_val.curr_view].active>1) walls[mod_val.curr_view].active=1;
 				}
 				else
 				{
-					mod_val.curr_view --;
+					objs[mod_val.curr_view].active--;
+					if(objs[mod_val.curr_view].active>1) objs[mod_val.curr_view].active=1;
+				}
+			}
+			
+			if(mod_val.current == 8)
+			{
+				if(mod_val.obj_type)
+				{
+					walls[mod_val.curr_view].pos.x -= mod_val.inc;
+				}
+				else
+				{
+					objs[mod_val.curr_view].pos.x -= mod_val.inc;
+				}			
+			
+			}
+			
+			if(mod_val.current == 9)
+			{
+				if(mod_val.obj_type)
+				{
+					walls[mod_val.curr_view].pos.y -= mod_val.inc;
+				}
+				else
+				{
+					objs[mod_val.curr_view].pos.y -= mod_val.inc;
+				}			
+			
+			}
+			
+			if(mod_val.current == 10)
+			{
+				walls[mod_val.curr_view].direction--;
+				if(walls[mod_val.curr_view].direction > 1) walls[mod_val.curr_view].direction = 1;
+			
+			}
+			
+			if(mod_val.current == 11)
+			{
+				objs[mod_val.curr_view].vel.x -= mod_val.inc;
+			}
+			
+			if(mod_val.current == 12)
+			{
+				objs[mod_val.curr_view].vel.y -= mod_val.inc;
+			}
+			
+			if(mod_val.current == 13)
+			{
+				if(mod_val.obj_type)
+				{
+					walls[mod_val.curr_view].length -= mod_val.inc;
+				}
+				else
+				{
+					objs[mod_val.curr_view].length -= mod_val.inc;
 				}
 			}
 		}
@@ -271,13 +473,32 @@ int main()
 		if(pressed & KEY_DLEFT)
 		{
 			mod_val.current--;
-			if (mod_val.current > 4) mod_val.current = 4;
+			if(mod_val.scope)
+			{
+				if (mod_val.current < 4) mod_val.current = 13;
+			}
+			else
+			{
+				if (mod_val.current > 4) mod_val.current = 4;
+			}
+			
+			if(mod_val.current==10 && mod_val.obj_type==0) mod_val.current = 9;
+			if(mod_val.current==12 && mod_val.obj_type==1) mod_val.current = 10;
 		}
 		
 		if(pressed & KEY_DRIGHT)
 		{
 			mod_val.current++;
-			if (mod_val.current > 4) mod_val.current = 0;
+			if(mod_val.scope)
+			{
+				if (mod_val.current > 13) mod_val.current = 4;
+			}
+			else
+			{
+				if (mod_val.current > 4) mod_val.current = 0;
+			}
+			if(mod_val.current==10 && mod_val.obj_type==0) mod_val.current = 11;
+			if(mod_val.current==11 && mod_val.obj_type==1) mod_val.current = 13;
 		}
 		
 
@@ -472,6 +693,24 @@ int main()
 			objs[0] = obj0;
 			objs[1] = obj1;
 			objs[2] = obj2;
+			for(u8 i = 3; i < 32; i ++) 
+			{
+				objs[i] = obj_null;
+			}
+			walls[0] = wobj0;
+			walls[1] = wobj1;
+			walls[2] = wobj2;
+			walls[3] = wobj3;
+			for(u8 i = 4; i < 32; i ++) 
+			{
+				walls[4] = wall_null;
+			}
+			
+			consoleSelect(&obj_info);
+			consoleClear();
+			consoleSelect(&global_info);
+			consoleClear();
+			consoleSelect(&top);
 		}
 
 		if(mod_val.gravity_from_accel)
@@ -504,21 +743,39 @@ int main()
 
 		//Live printing of important values
 		#ifdef debug
-		printf("\x1b[0;41H%s:%5.2f","fps",sf2d_get_fps());		
-		printf("\x1b[1;0H%s:%03d,%03d","touch_coord",mod_val.touch.px,mod_val.touch.py);
-		printf("\x1b[2;0H%s:%03.0f,%03.0f","rect_coord",objs[mod_val.curr_view].pos.x,objs[mod_val.curr_view].pos.y);
-		printf("\x1b[3;0H%s:%05.0f,%05.0f","offset",mod_val.offset.x,mod_val.offset.y);
-		printf("\x1b[4;0H%s:%010.3f,%010.3f","velocity",objs[mod_val.curr_view].vel.x,-objs[mod_val.curr_view].vel.y);
-		printf("\x1b[5;0H%s:%f,%f","gravity",mod_val.gravity.x,mod_val.gravity.y);
-		printf("\x1b[6;0H%s:%f","elasticity",mod_val.elasticity);
-		printf("\x1b[7;0H%s:%f","friction",mod_val.friction);
-		printf("\x1b[8;0H%s:%f","increment",mod_val.inc);		
-		printf("\x1b[12;0H%s:%s","mod_val",get_current_string(mod_val.current));
-		printf("\x1b[11;0H%s:%s","gravity_from_accel", get_gravity_from_accel_string(mod_val.gravity_from_accel));
-		printf("\x1b[9;0H%s:%02d","curr_view",mod_val.curr_view);
-		printf("\x1b[10;0H%s:%02d","mov_rect",mod_val.mov_rect);
-		printf("\x1b[13;0H%s:%04d,%04d","circle pad",circle.dx,circle.dy);
-		printf("\x1b[14;0H%s:%05.0f,%05.0f","camera",mod_val.camera.x,mod_val.camera.y);	
+		printf("\x1b[29;41H%s:%5.2f","fps",sf2d_get_fps());
+		
+		consoleSelect(&global_info);		
+		printf("\x1b[0;0H%s:%03d,%03d","touch_coord",mod_val.touch.px,mod_val.touch.py);
+		printf("\x1b[1;0H%s:%05.0f,%05.0f","offset",mod_val.offset.x,mod_val.offset.y);
+		printf("\x1b[2;0H%s:%6.2f,%6.2f","gravity",mod_val.gravity.x,mod_val.gravity.y);
+		printf("\x1b[3;0H%s:%5.5f","elasticity",mod_val.elasticity);
+		printf("\x1b[4;0H%s:%5.5f","friction",mod_val.friction);
+		printf("\x1b[5;0H%s:%f","increment",mod_val.inc);		
+		printf("\x1b[10;0H%s:%s","mod_val",get_current_string(mod_val.current));
+		printf("\x1b[6;0H%s:%s","gravity_from_accel", get_gravity_from_accel_string(mod_val.gravity_from_accel));
+		printf("\x1b[7;0H%s:%03d","mov_rect",mod_val.mov_rect);
+		printf("\x1b[8;0H%s:%05.0f,%05.0f","camera",mod_val.camera.x,mod_val.camera.y);	
+		printf("\x1b[9;0H%s:%s","scope",get_scope_string(mod_val.scope));
+		
+		consoleSelect(&obj_info);
+		
+		if(mod_val.obj_type)
+		{
+			printf("\x1b[3;0H%s:%d","direction",walls[mod_val.curr_view].direction);
+			printf("\x1b[2;0H%s:%03.0f,%03.0f","coord",walls[mod_val.curr_view].pos.x,walls[mod_val.curr_view].pos.y);
+			printf("\x1b[0;0H%s:w%02d","curr_view",mod_val.curr_view);
+			printf("\x1b[1;0H%s:%d","active",walls[mod_val.curr_view].active);
+			printf("\x1b[4;0H%s:%03d","length",walls[mod_val.curr_view].length);
+		}
+		else
+		{
+			printf("\x1b[2;0H%s:%03.0f,%03.0f","coord",objs[mod_val.curr_view].pos.x,objs[mod_val.curr_view].pos.y);
+			printf("\x1b[3;0H%s:%07.1f,%07.1f","velocity",objs[mod_val.curr_view].vel.x,-objs[mod_val.curr_view].vel.y);
+			printf("\x1b[0;0H%s:o%02d","curr_view",mod_val.curr_view);
+			printf("\x1b[1;0H%s:%d","active",objs[mod_val.curr_view].active);
+			printf("\x1b[4;0H%s:%03d","length",objs[mod_val.curr_view].length);
+		}
 		#endif
 
 		//draw frame
@@ -536,21 +793,4 @@ int main()
 	
 	sf2d_fini();
 	return 0;
-}
-
-//returns string of mod_val from id
-char* get_current_string(u8 id)
-{
-	if(id==0) return "gravity_y ";
-	if(id==1) return "gravity_x ";
-	if(id==2) return "elasticity";
-	if(id==3) return "friction  ";
-	if(id==4) return "curr_view ";
-	return "err_bad_id";
-}
-
-char* get_gravity_from_accel_string(u8 id)
-{
-	if(id == 0 ) return "off";
-	return "on ";
 }

@@ -58,8 +58,17 @@ typedef struct
 
 	//probably temporary-select which physobj's data is viewed
 	u8 curr_view; 
+	
+	//determines whether we are editing global or object info
+	u8 scope;
+	
+	//determines if user is editing wall_obj or phys_obj
+	u8 obj_type;
 
 } _mod_val;
 
+char* get_current_string(u8);
+char* get_gravity_from_accel_string(u8);
+char* get_scope_string(u8);
 
 #endif
