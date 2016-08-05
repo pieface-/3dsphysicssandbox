@@ -1,16 +1,20 @@
-# 3ds Physics Sandbox
+# 3ds Physics Sandbox v0.3 alpha
 An application for messing with physics on the 3ds
 
 ###Current Features:  
-- Manipulate a single 50 by 50 pixel square with the stylus  
-- The square is affected by gravity, collisions, and friction  
-- Modifiable gravity, collision elasticity, and friction values  
-- Use gyroscope of 3DS to control gravity (tilt 3ds and square will follow)
+- Manipulate multiple different sized squares with the stylus
+- Objects will bounce off of each other  
+- The squares are affected by gravity, with walls, and friction  
+- Modifiable gravity, collision elasticity, and friction values
+- Take a screenshot
+- Control gravity by tilting 3ds (accelerometer)
+- Move camera with circle pad
+- Walls that squares will bounce off of
+- different squares and walls can be made using on screen ui
 
-###Possible plans for the Future:  
+###Plans for the Future:  
 - Fix Banner Sound (Warning: sound may be irritable)
-- More than one object  
-- -Improve friction implementation- Done
+- Save and load state to and from file (coming v0.4)
 - Different kinds of objects (like circles or custom shapes)  
 - Proper implementation of forces/momentum and vectors  
 - Tension and ropes  
